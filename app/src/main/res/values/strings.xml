@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">MobilitiAssignment</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="host">https://mobility.cleverlance.com/download/bootcamp/image.php</string>
+    <string name="image">Image</string>
+    <string name="start_image">start_image</string>
+    <string name="img">img</string>
+    <string name="prompt_username">Username</string>
+    <string name="prompt_password">Password</string>
+    <string name="action_sign_in">Sign in</string>
+</resources>
