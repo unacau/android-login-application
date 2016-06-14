@@ -1,6 +1,6 @@
 package cz.ekishigo.mobilitiassignment;
 
-import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -25,10 +25,11 @@ import cz.ekishigo.mobilitiassignment.utils.Security;
 
 public class LoginActivity extends AppCompatActivity {
 
+    public final static String EXTRA_IMAGE = "cz.ekishigo.mobilityassignment.IMAGE";
+
     private EditText mUsernameView;
     private EditText mPasswordView;
     private Button mSignInButton;
-    private ImageView mImageView;
     private ProgressBar mProgressView;
 
     @Override
@@ -39,7 +40,6 @@ public class LoginActivity extends AppCompatActivity {
         mUsernameView = (EditText) findViewById(R.id.username_edit);
         mPasswordView = (EditText) findViewById(R.id.password_edit);
         mSignInButton = (Button) findViewById(R.id.sign_in_btn);
-        mImageView = (ImageView) findViewById(R.id.sign_in_picture);
         mProgressView = (ProgressBar) findViewById(R.id.login_progress);
         mSignInButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -53,39 +53,42 @@ public class LoginActivity extends AppCompatActivity {
     public void attemptLogin(View view) {
         String username = mUsernameView.getText().toString().toLowerCase();
         String password = mPasswordView.getText().toString().toLowerCase();
-        // TODO validate
-        String url = getString(R.string.host);
-        LoginTask loginTask = new LoginTask(this, url);
-        loginTask.execute(username, password);
+        // TODO: Validate
+        LoginTask loginTask = new LoginTask(username, password);
+        loginTask.execute();
     }
 
 
     /**
      * Created by ekishigo on 13.6.16.
      */
-    public class LoginTask extends AsyncTask<String, Void, String> {
+    public class LoginTask extends AsyncTask<Void, Void, String> {
 
-        private final String url;
+        private final String mUsername;
+        private final String mPassword;
 
-        public LoginTask(String url) {
-            this.url = url;
+        public LoginTask(String username, String password) {
+            this.mUsername = username;
+            this.mPassword = password;
         }
 
         @Override
         protected void onPreExecute() {
-            // TODO: show progress bar
+            // TODO: Show progress bar
         }
 
         @Override
-        protected String doInBackground(String... params) {
-            return login(params[0], params[1]);
+        protected String doInBackground(Void... params) {
+            return login(mUsername, mPassword);
         }
 
         @Override
         protected void onPostExecute(String rawResponse) {
-            if (rawResponse != null) {
-                showPicture(clearResponse(rawResponse));
+            if (rawResponse != null) { // OK
+                // TODO: save user
+                nextActivity(clearResponse(rawResponse));
             }
+            // TODO: Else set Error View by response code
         }
 
         /**
@@ -98,15 +101,16 @@ public class LoginActivity extends AppCompatActivity {
                 String query = "username=".concat(username);
                 String encodedPassword = Security.encodeSha1(password);
 
+                String url = getString(R.string.host);
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 doRequest(query, encodedPassword, connection);
-                logRequest(query, connection);
+//                logRequest(query, connection);
 
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     rawResponse = loadResponse(connection);
                 }
             } catch (IOException e) {
-                // TODO log
+                // TODO: Log
                 e.printStackTrace();
             }
             return rawResponse;
@@ -129,7 +133,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         /**
-         * Returns String with response from connection input stream.
+         * Returns String with response built by StringBuilder from connection InputStream.
          */
         private String loadResponse(HttpURLConnection connection) throws IOException {
             BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -141,10 +145,10 @@ public class LoginActivity extends AppCompatActivity {
             return responseOutput.toString();
         }
 
-        private void logRequest(String s, HttpURLConnection connection) throws IOException {
-            // TODO log it!
-            System.out.printf("POST request on : %s\n", url.toString());
-            System.out.printf("Query : %s\n", s);
+        private void logRequest(String query, HttpURLConnection connection) throws IOException {
+            // TODO: log it!
+            System.out.printf("POST request on : %query\n", connection.getURL().toString());
+            System.out.printf("Query : %query\n", query);
             System.out.printf("Response code=%d\n", connection.getResponseCode());
         }
 
@@ -154,16 +158,15 @@ public class LoginActivity extends AppCompatActivity {
         private String clearResponse(String s) {
             return s.substring(10, (s.length() - 2));
         }
+    }
 
-        /**
-         * Transform String with base-64 encoded picture to Bitmap and sets up it to ImageView
-         */
-        private void showPicture(String picture) {
-            byte[] imgBytes = Base64.decode(picture, Base64.DEFAULT);
-            Bitmap imgBitmap = BitmapFactory.decodeByteArray(imgBytes, 0, imgBytes.length);
-            imageView.setImageBitmap(imgBitmap);
-        }
-
-
+    /**
+     * Decodes String with base-64 encoded picture to bytes array and fires new Activity with it.
+     */
+    private void nextActivity(String picture) {
+        Intent intent = new Intent(this, ImageActivity.class);
+        byte[] imgBytes = Base64.decode(picture, Base64.DEFAULT);
+        intent.putExtra(EXTRA_IMAGE, imgBytes);
+        startActivity(intent);
     }
 }
